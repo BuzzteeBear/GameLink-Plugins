@@ -8,6 +8,7 @@
     <Configurations>All;Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\description.html" />
     <EmbeddedResource Include="Resources\logo.png" />
   </ItemGroup>
   <ItemGroup>
@@ -26,4 +27,5 @@
     <ProjectReference Include="..\YawGLAPI\YawGLAPI.csproj" />
   </ItemGroup>
   <PropertyGroup />
+  <Import Project="..\SharedLib\SharedLib.projitems" Label="Shared" />
 </Project>
