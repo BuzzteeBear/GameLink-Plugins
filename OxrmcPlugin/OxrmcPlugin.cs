@@ -1,17 +1,15 @@
-﻿using OxrmcPlugin.Properties;
-using Microsoft.VisualBasic;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Windows;
 using YawGLAPI;
 using SharedLib;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace YawVR_Game_Engine.Plugin
 {
@@ -21,43 +19,43 @@ namespace YawVR_Game_Engine.Plugin
 
 	class OxrmcPlugin : Game
 	{
-		[StructLayout(LayoutKind.Sequential, Pack = 4, CharSet = CharSet.Unicode)]
+		[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
 		[Serializable]
 		private struct Telemetry
 		{
-			public double Sway;
-			public double Surge;
-			public double Heave;
-			public double Yaw;
-			public double Roll;
-			public double Pitch;
-			public bool Active;
-			public bool Connected;
+			// output
+			[FieldOffset(0)] public double Sway;
+			[FieldOffset(8)] public double Surge;
+			[FieldOffset(16)] public double Heave;
+			[FieldOffset(24)] public double Yaw;
+			[FieldOffset(32)] public double Roll;
+			[FieldOffset(40)] public double Pitch;
+			[FieldOffset(48)] public bool Active;
 
-			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-			public byte[] Reserved;
+			// for future extension
+			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+			[FieldOffset(56)] public byte[] Unused;
 
-			public byte[] GetBytes()
-			{
-				int size = Marshal.SizeOf(this);
-				IntPtr ptr = Marshal.AllocHGlobal(size);
-				byte[] buffer = new byte[size];
+			// input
+			[FieldOffset(64)] public double OffsetSway;
+			[FieldOffset(72)] public double OffsetSurge;
+			[FieldOffset(80)] public double OffsetHeave;
+			[FieldOffset(88)] public double OffsetYaw;
+			[FieldOffset(96)] public double OffsetRoll;
+			[FieldOffset(104)] public double OffsetPitch;
+			[FieldOffset(112)] public bool Connected;
 
-				Marshal.StructureToPtr(this, ptr, true);
-				Marshal.Copy(ptr, buffer, 0, size);
-				Marshal.FreeHGlobal(ptr);
-
-				return buffer;
-			}
-		};
+			// for future extension
+			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 392)]
+			[FieldOffset(120)] public byte[] Reserved;
+		}
 
 		private IProfileManager _controller;
 		private IMainFormDispatcher _dispatcher;
 
 		private Thread _readThread;
-		private bool _running = false;
+		private bool _running;
 		private MemoryMappedFile _sharedMemory;
-		private MemoryMappedViewAccessor _viewAccessor;
 
 		public string PROCESS_NAME => "CorEstimator";
 		public int STEAM_ID => 0;
@@ -68,6 +66,7 @@ namespace YawVR_Game_Engine.Plugin
 		public Stream SmallLogo => ResourceHelper.GetStream("recent.png");
 		public Stream Background => ResourceHelper.GetStream("wide.png");
 		public string Description => ResourceHelper.GetString("description.html");
+		private string ProfileJson => ResourceHelper.GetString("default.yawglprofile");
 
 		public void PatchGame()
 		{
@@ -88,7 +87,7 @@ namespace YawVR_Game_Engine.Plugin
 
 		public void Init()
 		{
-			bool mmfFound = false;
+			var mmfFound = false;
 			_running = true;
 			Task.Run(async delegate
 			{
@@ -97,7 +96,6 @@ namespace YawVR_Game_Engine.Plugin
 					try
 					{
 						_sharedMemory = MemoryMappedFile.OpenExisting("Local\\OXRMC_Telemetry");
-						_viewAccessor = _sharedMemory.CreateViewAccessor(0, Marshal.SizeOf(typeof(Telemetry)));
 
 						SetConnectedFlag(true);
 
@@ -118,12 +116,10 @@ namespace YawVR_Game_Engine.Plugin
 		{
 			try
 			{
-				var data = ReadTelemetry();
 				using var stream = _sharedMemory.CreateViewStream();
 				using var writer = new BinaryWriter(stream);
-				data.Connected = flag;
-				var bytes = data.GetBytes();
-				writer?.Write(bytes, 0, bytes.Length);
+				writer.Seek(112, SeekOrigin.Begin);
+				writer.Write(flag);
 			}
 			catch (FileNotFoundException)
 			{
@@ -139,7 +135,7 @@ namespace YawVR_Game_Engine.Plugin
 			var size = Marshal.SizeOf(typeof(Telemetry));
 			var bytes = reader.ReadBytes(size);
 			var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-			var data = (Telemetry)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Telemetry));
+			var data = (Telemetry)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Telemetry))!;
 			handle.Free();
 			return data;
 		}
@@ -154,15 +150,14 @@ namespace YawVR_Game_Engine.Plugin
 					var telemetry = ReadTelemetry();
 
 					// Map data to controller inputs
-					_controller.SetInput(0, (float)telemetry.Sway);
-					_controller.SetInput(1, (float)telemetry.Surge);
-					_controller.SetInput(2, (float)telemetry.Heave);
-					_controller.SetInput(3, (float)-telemetry.Yaw);
-					_controller.SetInput(4, (float)-telemetry.Roll);
-					_controller.SetInput(5, (float)-telemetry.Pitch);
+					_controller.SetInput(0, (float)-telemetry.Yaw);
+					_controller.SetInput(1, (float)-telemetry.Roll);
+					_controller.SetInput(2, (float)-telemetry.Pitch);
+					_controller.SetInput(3, (float)telemetry.Sway);
+					_controller.SetInput(4, (float)telemetry.Surge);
+					_controller.SetInput(5, (float)telemetry.Heave);
 					_controller.SetInput(6, telemetry.Active ? 1f : 0f);
 					_controller.SetInput(7, telemetry.Connected ? 1f : 0f);
-					_controller.SetInput(8, 0f); // Reserved
 
 					Thread.Sleep(10); // Poll at 100 Hz
 				}
@@ -175,23 +170,25 @@ namespace YawVR_Game_Engine.Plugin
 			}
 			catch (Exception ex)
 			{
-				Interaction.MsgBox($"Error reading shared memory: {ex.Message}", MsgBoxStyle.Critical, "Error");
+				System.Windows.MessageBox.Show($"Failure reading from shared memory:\n{ex}",
+					"Error",
+					MessageBoxButton.OK,
+					MessageBoxImage.Error);
 			}
 		}
 
 		public string[] GetInputData()
 		{
-			return typeof(Telemetry).GetFields().Select(field => field.Name).ToArray();
+			return ["yaw", "roll", "pitch", "sway", "surge", "heave", "active", "connected"];
 		}
-
 		public LedEffect DefaultLED()
 		{
-			return _dispatcher.JsonToLED(Resources.defProfile);
+			return _dispatcher.JsonToLED(ProfileJson);
 		}
 
 		public List<Profile_Component> DefaultProfile()
 		{
-			return _dispatcher.JsonToComponents(Resources.defProfile);
+			return _dispatcher.JsonToComponents(ProfileJson);
 		}
 
 		public Dictionary<string, ParameterInfo[]> GetFeatures()
