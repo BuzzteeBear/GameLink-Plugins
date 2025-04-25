@@ -1,0 +1,115 @@
+{
+  "GameName": "OXRMC COR Estimator",
+  "Name": "Default ",
+  "Components": [
+    {
+      "Constant": false,
+      "Input_index": 0,
+      "Output_index": 0,
+      "MultiplierPos": 45.0,
+      "MultiplierNeg": 45.0,
+      "Offset": 0.0,
+      "Inverse": false,
+      "Limit": -1.0,
+      "Smoothing": 1.0,
+      "Enabled": true,
+      "Spikeflatter": {
+        "Enabled": false,
+        "Limit": 100.0,
+        "Strength": 0.5
+      },
+      "Deadzone": 0.0,
+      "Type": 0,
+      "Condition": [
+        {
+          "ComponentCondition": 2,
+          "OtherIndex": 6,
+          "Value": 1.0
+        }
+      ],
+      "Math": []
+    },
+    {
+      "Constant": false,
+      "Input_index": 1,
+      "Output_index": 2,
+      "MultiplierPos": 20.0,
+      "MultiplierNeg": 20.0,
+      "Offset": 0.0,
+      "Inverse": false,
+      "Limit": -1.0,
+      "Smoothing": 1.0,
+      "Enabled": true,
+      "Spikeflatter": {
+        "Enabled": false,
+        "Limit": 100.0,
+        "Strength": 0.5
+      },
+      "Deadzone": 0.0,
+      "Type": 0,
+      "Condition": [
+        {
+          "ComponentCondition": 2,
+          "OtherIndex": 6,
+          "Value": 1.0
+        }
+      ],
+      "Math": []
+    },
+    {
+      "Constant": false,
+      "Input_index": 2,
+      "Output_index": 1,
+      "MultiplierPos": 15.0,
+      "MultiplierNeg": 45.0,
+      "Offset": 0.0,
+      "Inverse": false,
+      "Limit": -1.0,
+      "Smoothing": 1.0,
+      "Enabled": true,
+      "Spikeflatter": {
+        "Enabled": false,
+        "Limit": 100.0,
+        "Strength": 0.5
+      },
+      "Deadzone": 0.0,
+      "Type": 0,
+      "Condition": [
+        {
+          "ComponentCondition": 2,
+          "OtherIndex": 6,
+          "Value": 1.0
+        }
+      ],
+      "Math": []
+    }
+  ],
+  "Effects": {
+    "EffectID": 0,
+    "InputID": 6,
+    "Multiplier": -20.0,
+    "Colors": [
+      {
+        "R": 0,
+        "G": 0,
+        "B": 128
+      },
+      {
+        "R": 0,
+        "G": 0,
+        "B": 128
+      },
+      {
+        "R": 0,
+        "G": 0,
+        "B": 128
+      },
+      {
+        "R": 0,
+        "G": 0,
+        "B": 128
+      }
+    ]
+  },
+  "Functions": []
+}
