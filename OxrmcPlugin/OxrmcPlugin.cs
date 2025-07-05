@@ -14,7 +14,7 @@ using SharedLib;
 namespace YawVR_Game_Engine.Plugin
 {
 	[Export(typeof(Game))]
-	[ExportMetadata("Name", "OXRMC COR Estimator")]
+	[ExportMetadata("Name", "OXRMC CoR Estimator")]
 	[ExportMetadata("Version", "1.0")]
 
 	class OxrmcPlugin : Game
@@ -170,7 +170,7 @@ namespace YawVR_Game_Engine.Plugin
 			}
 			catch (Exception ex)
 			{
-				System.Windows.MessageBox.Show($"Failure reading from shared memory:\n{ex}",
+				MessageBox.Show($"Failure reading from shared memory:\n{ex}",
 					"Error",
 					MessageBoxButton.OK,
 					MessageBoxImage.Error);
